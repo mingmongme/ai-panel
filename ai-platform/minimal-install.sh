@@ -533,7 +533,8 @@ HTML
 cat > "$DEPLOY_DIR/src/Dockerfile" <<'DOCKER'
 FROM node:24-bookworm-slim
 WORKDIR /app
-COPY package.json . && npm install express cors express-session
+COPY package.json .
+RUN npm install express cors express-session
 COPY . .
 ENV FRONTEND_DIST=/app/public PORT=8080
 EXPOSE 8080
