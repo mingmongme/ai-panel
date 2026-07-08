@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.0)
-# No build step. No monorepo. 300 lines. Bulletproof.
+# AI for You — Minimal installer (v3.1)
+# No build step. No monorepo. 600 lines. Bulletproof.
+#
+# Usage (as root on a fresh Ubuntu VPS):
+#   export EMAIL=you@example.com
+#   export DOMAIN=ai.abcomputers.info
+#   export ADMIN_PASSWORD=your-secure-password
+#   curl -fsSL http://install.abcomputers.info/minimal-install.sh -o /tmp/install.sh && sed -i 's/\r$//' /tmp/install.sh && bash /tmp/install.sh
 # ============================================================
 set -eu
 
@@ -555,13 +561,11 @@ cd "$DEPLOY_DIR/docker" && docker compose up -d
 ok "Stack started"
 
 # ── Step 11: Staging SSL ──
-status "SSL staging..."
-sleep 3
-if docker run -d --rm --name certbot-nginx -p 80:80 -v certbot-www:/var/www/certbot -v "$DEPLOY_DIR/nginx/certbot.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine 2>/dev/null; then
-  sleep 2
-  if docker run --rm -v certbot-conf:/etc/letsencrypt -v certbot-www:/var/www/certbot certbot/certbot certonly --webroot -w /var/www/certbot --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging 2>/dev/null; then
+if [ -n "$EMAIL" ]; then
+  status "SSL staging..."
+  sleep 5
+  if docker run --rm -v certbot-conf:/etc/letsencrypt -v certbot-www:/var/www/certbot certbot/certbot certonly --webroot -w /var/www/certbot --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
     ok "Staging SSL ready"
-    # Switch nginx to HTTPS
     cat > "$DEPLOY_DIR/nginx/ai.conf" <<EOF
 server {
     listen 80; server_name $DOMAIN;
@@ -588,14 +592,13 @@ server {
     }
 }
 EOF
-    docker exec ai-nginx nginx -t 2>/dev/null && docker exec ai-nginx nginx -s reload 2>/dev/null || docker restart ai-nginx
+    docker exec ai-nginx nginx -t && docker exec ai-nginx nginx -s reload || docker restart ai-nginx
     warn "Browser will show 'not secure' — this is expected for staging"
   else
-    warn "SSL failed — using HTTP only"
+    warn "SSL failed — using HTTP only (set a real EMAIL for SSL)"
   fi
-  docker stop certbot-nginx 2>/dev/null || true
 else
-  warn "SSL skipped"
+  warn "EMAIL not set — skipping SSL (HTTP only)"
 fi
 
 # ── Step 12: Pull models ──
