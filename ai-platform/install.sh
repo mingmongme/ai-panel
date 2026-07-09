@@ -11,7 +11,7 @@
 set -euo pipefail
 
 DOMAIN="${DOMAIN:?Set DOMAIN, e.g. export DOMAIN=ai.abcomputers.info}"
-EMAIL="${EMAIL:?Set EMAIL for Let's Encrypt, e.g. export EMAIL=you@example.com}"
+EMAIL="${EMAIL:?Set EMAIL for the SSL certificate, e.g. export EMAIL=you@example.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD, e.g. export ADMIN_PASSWORD=your-password}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
 NODE_VERSION="24.11.0"
