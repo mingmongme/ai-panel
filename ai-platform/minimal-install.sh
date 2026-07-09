@@ -16,7 +16,7 @@ EMAIL="${EMAIL:-}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 TZ="${TZ:-Europe/London}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
-RELEASE_URL="https://github.com/mingmongme/ai-panel/releases/download/v1.1.0/abc-ai-panel-v1.1.0.tar.gz"
+RELEASE_URL="http://install.abcomputers.info/abc-ai-panel-v1.1.0.tar.gz"
 
 RED='\033[31m'; GREEN='\033[32m'; BLUE='\033[34m'; BOLD='\033[1m'; RESET='\033[0m'
 status() { printf "${BLUE}==>${RESET} ${BOLD}%s${RESET}\n" "$1" >&2; }
