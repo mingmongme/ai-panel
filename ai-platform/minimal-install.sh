@@ -63,12 +63,7 @@ mv abc-ai-panel-release app
 rm app.tar.gz
 ok "App extracted"
 
-# ── Step 4: Install runtime dependencies ──
-status "Installing runtime dependencies..."
-cd "$DEPLOY_DIR/app"
-npm install --no-save express cors express-session pdf-parse archiver nodemailer express-rate-limit 2>/dev/null || \
-  (apt-get install -y npm && npm install --no-save express cors express-session pdf-parse archiver nodemailer express-rate-limit)
-ok "Dependencies ready"
+# ── Step 4: (no extra install needed — Dockerfile handles it) ──
 
 # ── Step 5: Session secret ──
 SESSION_SECRET="$(generate_secret)"
@@ -221,7 +216,6 @@ services:
       - ai-net
     volumes:
       - panel-data:/app/data
-      - ../app:/app
     environment:
       - PORT=8080
       - FRONTEND_DIST=/app/public
