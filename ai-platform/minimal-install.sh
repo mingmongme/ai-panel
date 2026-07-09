@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.4)
+# AI for You — Minimal installer (v3.5)
 # No build step. No monorepo. 600 lines. Bulletproof.
 #
 # Usage (as root on a fresh Ubuntu VPS):
@@ -51,7 +51,7 @@ if ! swapon --show | grep -q swap; then
 fi
 
 # ── Step 3: Dirs ──
-rm -rf "$DEPLOY_DIR" && mkdir -p "$DEPLOY_DIR"/{nginx,docker,src}
+rm -rf "$DEPLOY_DIR" && mkdir -p "$DEPLOY_DIR"/{nginx,docker,src,certbot-conf,certbot-www}
 
 # ── Step 4: .env ──
 SESSION_SECRET=$(generate_secret)
@@ -110,8 +110,6 @@ networks:
 volumes:
   ollama-data: { driver: local }
   panel-data: { driver: local }
-  certbot-conf: { driver: local }
-  certbot-www: { driver: local }
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -120,14 +118,16 @@ services:
     ports: ["80:80", "443:443"]
     volumes:
       - ../nginx:/etc/nginx/conf.d:ro
-      - certbot-conf:/etc/letsencrypt:ro
-      - certbot-www:/var/www/certbot:ro
+      - ../certbot-conf:/etc/letsencrypt:ro
+      - ../certbot-www:/var/www/certbot:ro
     networks: [ai-net]
   certbot:
     image: certbot/certbot:latest
     container_name: ai-certbot
     restart: "no"
-    volumes: [certbot-conf:/etc/letsencrypt, certbot-www:/var/www/certbot]
+    volumes:
+      - ../certbot-conf:/etc/letsencrypt
+      - ../certbot-www:/var/www/certbot
     entrypoint: >
       sh -c "trap exit TERM; while :; do certbot renew --quiet --webroot -w /var/www/certbot; sleep 12h; done"
   ollama:
