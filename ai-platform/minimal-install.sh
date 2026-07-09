@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.6)
+# AI for You — Minimal installer (v3.7)
 # No build step. No monorepo. 600 lines. Bulletproof.
 #
 # Usage (as root on a fresh Ubuntu VPS):
@@ -569,8 +569,8 @@ if [ -n "$EMAIL" ]; then
     -v "$DEPLOY_DIR/certbot-conf:/etc/letsencrypt" \
     -v "$DEPLOY_DIR/certbot-www:/var/www/certbot" \
     -p 80:80 \
-    certbot/certbot certonly --standalone --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
-    ok "Staging SSL ready"
+    certbot/certbot certonly --standalone --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN"; then
+    ok "SSL ready"
     cat > "$DEPLOY_DIR/nginx/ai.conf" <<EOF
 server {
     listen 80; server_name $DOMAIN;
@@ -597,7 +597,7 @@ server {
 }
 EOF
     docker start ai-nginx || docker restart ai-nginx
-    warn "Browser will show 'not secure' — this is expected for staging"
+    ok "HTTPS active — green lock in browser"
   else
     docker start ai-nginx || docker restart ai-nginx
     warn "SSL failed — using HTTP only (set a real EMAIL for SSL)"
