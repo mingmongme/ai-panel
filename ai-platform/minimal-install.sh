@@ -310,9 +310,16 @@ body{font-family:Inter,system-ui,sans-serif;background:#0B1F3A;color:#e2e8f0;hei
 .welcome-icon{width:64px;height:64px;background:#38BDF8;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#0B1F3A;margin-bottom:16px}
 .welcome h2{font-size:20px;margin-bottom:8px;color:#fff}
 .welcome p{color:#94a3b8;max-width:400px}
-.message{max-width:80%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.6}
-.message.user{align-self:flex-end;background:#38BDF8;color:#0B1F3A}
-.message.assistant{align-self:flex-start;background:#1e293b;color:#e2e8f0}
+.message{max-width:80%;padding:12px 16px;border-radius:14px;font-size:14px;line-height:1.6;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap}
+.message.user{align-self:flex-end;background:#38BDF8;color:#0B1F3A;max-width:75%;min-width:80px;border-bottom-right-radius:4px}
+.message.assistant{align-self:flex-start;background:#1e293b;color:#e2e8f0;max-width:85%;border-bottom-left-radius:4px}
+.msg-row{display:flex;gap:10px;max-width:3xl;margin:0 auto;width:100%}
+.msg-row.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700}
+.msg-avatar.user{background:#38BDF8;color:#0B1F3A}
+.msg-avatar.assistant{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.msg-meta{font-size:11px;color:#64748b;margin-bottom:3px}
+.msg-meta.user{text-align:right}
 .input-area{border-top:1px solid #1e293b;padding:16px}
 .input-row{display:flex;gap:8px}
 .input-row input{flex:1;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px 16px;color:#fff;font-size:14px;outline:none}
@@ -329,6 +336,8 @@ body{font-family:Inter,system-ui,sans-serif;background:#0B1F3A;color:#e2e8f0;hei
 .auth-box button:hover{background:#0EA5E9}
 .auth-box .error{color:#f87171;font-size:13px;margin-bottom:12px}
 .footer{padding:12px;border-top:1px solid #1e293b;font-size:11px;color:#475569}
+.new-chat-btn svg,.chat-item svg,.footer svg{display:inline-block;vertical-align:middle;margin-right:4px}
+#send-btn svg,#stop-btn svg{display:inline-block;vertical-align:middle;margin-right:4px}
 </style>
 </head>
 <body>
@@ -398,14 +407,32 @@ function initApp() {
   listModels().then(m => { models = m; if (m.length && !selectedModel) selectedModel = m[0].name; renderHeader(); });
 }
 
+const ICON = {
+  plus: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  message: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  user: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  bot: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`,
+  settings: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+  edit: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  logout: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  stop: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`,
+  send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+};
+
 function renderApp() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-header">AI for You</div>
-      <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+      <button class="new-chat-btn" onclick="newChat()">${ICON.plus} New Chat</button>
       <div class="chat-list" id="chat-list"></div>
-      <div class="footer">${currentUser?.displayName || ""} ${currentUser?.isAdmin ? "(Admin)" : ""}</div>
+      <div class="footer">
+        <span style="display:flex;align-items:center;gap:6px">${ICON.user} ${currentUser?.displayName || ""} ${currentUser?.isAdmin ? "(Admin)" : ""}</span>
+        <span style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span style="cursor:pointer;opacity:.6;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6" onclick="logout()" title="Sign out">${ICON.logout}</span>
+        </span>
+      </div>
     </div>
     <div class="main">
       <div class="header">
@@ -419,7 +446,8 @@ function renderApp() {
       <div class="input-area">
         <div class="input-row">
           <input id="msg-input" placeholder="Ask anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMessage()">
-          <button onclick="sendMessage()" id="send-btn">Send</button>
+          <button onclick="sendMessage()" id="send-btn">${ICON.send} Send</button>
+          <button onclick="stopStreaming()" id="stop-btn" style="display:none;background:#ef4444">${ICON.stop} Stop</button>
         </div>
       </div>
     </div>`;
@@ -431,7 +459,7 @@ function renderChatList() {
   const list = document.getElementById("chat-list");
   if (!list) return;
   list.innerHTML = conversations.map(c =>
-    `<button class="chat-item ${c.id === activeId ? 'active' : ''}" onclick="switchChat('${c.id}')">${c.title}</button>`
+    `<button class="chat-item ${c.id === activeId ? 'active' : ''}" onclick="switchChat('${c.id}')">${ICON.message} ${c.title}</button>`
   ).join("");
 }
 
@@ -448,16 +476,39 @@ function renderMessages() {
   if (!conv || !conv.messages.length) {
     msgs.innerHTML = `
       <div class="welcome">
-        <div class="welcome-icon">AI</div>
+        <div class="welcome-icon">${ICON.bot}</div>
         <h2>AI Assistant</h2>
         <p>Secure, private AI running on your own hardware. Nothing leaves your network.</p>
       </div>`;
     return;
   }
-  msgs.innerHTML = conv.messages.map(m =>
-    `<div class="message ${m.role}">${escapeHtml(m.content) || (streaming && m.role === "assistant" ? "<span style='opacity:.5'>...</span>" : "")}</div>`
-  ).join("");
+  msgs.innerHTML = conv.messages.map(m => {
+    const isUser = m.role === "user";
+    const isAssistant = m.role === "assistant";
+    const isStreamingThis = streaming && isAssistant && m === conv.messages[conv.messages.length - 1];
+    const avatar = isUser ? ICON.user : ICON.bot;
+    const avatarClass = isUser ? "user" : "assistant";
+    const name = isUser ? "You" : "AI Assistant";
+    const content = escapeHtml(m.content) || (isStreamingThis ? "<span style='opacity:.5'>Thinking...</span>" : "");
+    return `<div class="msg-row ${m.role}">
+      <div class="msg-avatar ${avatarClass}">${avatar}</div>
+      <div style="flex:1;min-width:0">
+        <div class="msg-meta ${m.role}">${name}</div>
+        <div class="message ${m.role}">${content}</div>
+      </div>
+    </div>`;
+  }).join("");
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+function stopStreaming() {
+  if (abortController) { abortController.abort(); abortController = null; }
+  streaming = false;
+  const sendBtn = document.getElementById("send-btn");
+  const stopBtn = document.getElementById("stop-btn");
+  if (sendBtn) sendBtn.style.display = "";
+  if (stopBtn) stopBtn.style.display = "none";
+  saveConversations(); renderMessages();
 }
 
 function escapeHtml(t) { const d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
@@ -476,7 +527,11 @@ async function sendMessage() {
   if (!text || !selectedModel || streaming) return;
   input.value = "";
   streaming = true;
-  document.getElementById("send-btn").disabled = true;
+  const sendBtn = document.getElementById("send-btn");
+  const stopBtn = document.getElementById("stop-btn");
+  if (sendBtn) sendBtn.style.display = "none";
+  if (stopBtn) stopBtn.style.display = "";
+  if (stopBtn) stopBtn.disabled = false;
 
   const conv = conversations.find(c => c.id === activeId);
   const userMsg = { id: uid(), role: "user", content: text, createdAt: Date.now() };
@@ -518,7 +573,7 @@ async function sendMessage() {
       }
     }
   } catch (e) { assistantMsg.content += "\n[Error: " + e.message + "]"; renderMessages(); }
-  finally { streaming = false; document.getElementById("send-btn").disabled = false; saveConversations(); renderChatList(); }
+  finally { streaming = false; const sendBtn = document.getElementById("send-btn"); const stopBtn = document.getElementById("stop-btn"); if (sendBtn) { sendBtn.style.display = ""; sendBtn.disabled = false; } if (stopBtn) stopBtn.style.display = "none"; saveConversations(); renderChatList(); }
 }
 
 async function boot() {
