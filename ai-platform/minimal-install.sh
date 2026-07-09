@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.1)
+# AI for You — Minimal installer (v3.2)
 # No build step. No monorepo. 600 lines. Bulletproof.
 #
 # Usage (as root on a fresh Ubuntu VPS):
@@ -275,7 +275,7 @@ app.post("/api/chat", requireAuth, async (req, res) => {
 // Serve static frontend
 const PUBLIC = path.join(__dirname, "public");
 app.use(express.static(PUBLIC));
-app.get("*", (_req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
+app.use((_req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));
