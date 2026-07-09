@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.3)
+# AI for You — Minimal installer (v3.4)
 # No build step. No monorepo. 600 lines. Bulletproof.
 #
 # Usage (as root on a fresh Ubuntu VPS):
@@ -564,7 +564,7 @@ ok "Stack started"
 if [ -n "$EMAIL" ]; then
   status "SSL staging..."
   sleep 5
-  if cd "$DEPLOY_DIR/docker" && docker compose run --rm --entrypoint certbot certbot certonly --webroot -w /var/www/certbot --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
+  if docker exec ai-certbot certbot certonly --webroot -w /var/www/certbot --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
     ok "Staging SSL ready"
     cat > "$DEPLOY_DIR/nginx/ai.conf" <<EOF
 server {
