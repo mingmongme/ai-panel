@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# AI for You — Minimal installer (v3.5)
+# AI for You — Minimal installer (v3.6)
 # No build step. No monorepo. 600 lines. Bulletproof.
 #
 # Usage (as root on a fresh Ubuntu VPS):
@@ -564,12 +564,16 @@ ok "Stack started"
 if [ -n "$EMAIL" ]; then
   status "SSL staging..."
   sleep 5
-  if docker exec ai-certbot certbot certonly --webroot -w /var/www/certbot --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
+  docker stop ai-nginx
+  if docker run --rm \
+    -v "$DEPLOY_DIR/certbot-conf:/etc/letsencrypt" \
+    -v "$DEPLOY_DIR/certbot-www:/var/www/certbot" \
+    -p 80:80 \
+    certbot/certbot certonly --standalone --non-interactive --agree-tos --email "$EMAIL" -d "$DOMAIN" --staging; then
     ok "Staging SSL ready"
     cat > "$DEPLOY_DIR/nginx/ai.conf" <<EOF
 server {
     listen 80; server_name $DOMAIN;
-    location /.well-known/acme-challenge/ { root /var/www/certbot; }
     location / { return 301 https://\$host\$request_uri; }
 }
 server {
@@ -592,9 +596,10 @@ server {
     }
 }
 EOF
-    docker exec ai-nginx nginx -t && docker exec ai-nginx nginx -s reload || docker restart ai-nginx
+    docker start ai-nginx || docker restart ai-nginx
     warn "Browser will show 'not secure' — this is expected for staging"
   else
+    docker start ai-nginx || docker restart ai-nginx
     warn "SSL failed — using HTTP only (set a real EMAIL for SSL)"
   fi
 else
