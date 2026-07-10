@@ -118,6 +118,10 @@ systemctl daemon-reload
 systemctl enable --now ai-panel
 
 cat > /etc/caddy/Caddyfile <<EOF
+{
+  email ${EMAIL}
+}
+
 ${DOMAIN} {
   reverse_proxy localhost:8080
   encode gzip
