@@ -16,7 +16,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD, e.g. export ADMIN_PASSWORD
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
 NODE_VERSION="24.11.0"
 TARBALL_URL="https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/ai-for-you-v1.tar.gz"
-MODELS="${MODELS:-llama3.2 qwen2.5:7b}"
+MODELS="${MODELS:-llama3.2 llama3.1 qwen2.5:7b mistral:7b deepseek-r1:7b phi4}"
 
 RED='\033[31m'; GREEN='\033[32m'; BLUE='\033[34m'; BOLD='\033[1m'; RESET='\033[0m'
 status() { printf "${BLUE}==>${RESET} ${BOLD}%s${RESET}\n" "$1"; }
