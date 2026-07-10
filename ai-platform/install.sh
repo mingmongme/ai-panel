@@ -25,7 +25,7 @@ die()    { printf "${RED}Error:${RESET} %s\n" "$1" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "Run as root (sudo bash install.sh)"
 
-status "Step 1/8 — Swap"
+status "Step 1/9 — Swap"
 if ! swapon --show | grep -q swap; then
   fallocate -l 4G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=4096
   chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
@@ -35,7 +35,7 @@ else
   ok "Swap already present"
 fi
 
-status "Step 2/8 — Ollama"
+status "Step 2/9 — Ollama"
 if ! command -v ollama &>/dev/null; then
   curl -fsSL https://ollama.com/install.sh | sh
 fi
@@ -43,7 +43,7 @@ systemctl enable --now ollama
 sleep 2
 ok "Ollama running"
 
-status "Step 3/8 — Node.js ${NODE_VERSION}"
+status "Step 3/9 — Node.js ${NODE_VERSION}"
 if ! command -v node &>/dev/null || [ "$(node -v)" != "v${NODE_VERSION}" ]; then
   curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -o /tmp/node.tar.xz
   tar -xf /tmp/node.tar.xz -C /usr/local --strip-components=1
@@ -51,7 +51,7 @@ if ! command -v node &>/dev/null || [ "$(node -v)" != "v${NODE_VERSION}" ]; then
 fi
 ok "Node.js $(node -v)"
 
-status "Step 4/8 — Caddy"
+status "Step 4/9 — Caddy"
 if ! command -v caddy &>/dev/null; then
   apt-get update -y -qq
   apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl gnupg
@@ -64,7 +64,29 @@ if ! command -v caddy &>/dev/null; then
 fi
 ok "Caddy $(caddy version 2>/dev/null | head -1)"
 
-status "Step 5/8 — App"
+status "Step 5/9 — Chromium (browser agent)"
+CHROMIUM_BIN=""
+for candidate in /usr/bin/chromium /usr/bin/chromium-browser; do
+  if [ -x "$candidate" ]; then CHROMIUM_BIN="$candidate"; break; fi
+done
+if [ -z "$CHROMIUM_BIN" ]; then
+  apt-get update -y -qq
+  if apt-get install -y -qq chromium 2>/dev/null && [ -x /usr/bin/chromium ]; then
+    CHROMIUM_BIN="/usr/bin/chromium"
+  elif apt-get install -y -qq chromium-browser 2>/dev/null && [ -x /usr/bin/chromium-browser ]; then
+    CHROMIUM_BIN="/usr/bin/chromium-browser"
+  elif command -v snap &>/dev/null && snap install chromium 2>/dev/null && [ -x /snap/bin/chromium ]; then
+    CHROMIUM_BIN="/snap/bin/chromium"
+  fi
+fi
+if [ -n "$CHROMIUM_BIN" ] && "$CHROMIUM_BIN" --version &>/dev/null; then
+  ok "Chromium found: $("$CHROMIUM_BIN" --version)"
+else
+  CHROMIUM_BIN=""
+  echo -e "${RED}Warning:${RESET} could not install/verify Chromium. The browser agent feature will be unavailable until you install it manually and set CHROMIUM_PATH in ${DEPLOY_DIR}/app.env."
+fi
+
+status "Step 6/9 — App"
 mkdir -p "$DEPLOY_DIR"
 curl -fsSL "$TARBALL_URL" -o /tmp/ai-for-you.tar.gz || die "Could not download app from GitHub"
 rm -rf "$DEPLOY_DIR/app"
@@ -76,7 +98,7 @@ npm install --omit=dev --no-audit --no-fund
 mkdir -p "$DEPLOY_DIR/data"
 ok "App installed to $DEPLOY_DIR/app"
 
-status "Step 6/8 — Configuration"
+status "Step 7/9 — Configuration"
 SESSION_SECRET="$(openssl rand -hex 32)"
 cat > "$DEPLOY_DIR/app.env" <<EOF
 NODE_ENV=production
@@ -91,10 +113,13 @@ DATA_DIR=${DEPLOY_DIR}/data
 FILES_ROOT=${DEPLOY_DIR}/data/projects
 LOG_LEVEL=info
 EOF
+if [ -n "$CHROMIUM_BIN" ]; then
+  echo "CHROMIUM_PATH=${CHROMIUM_BIN}" >> "$DEPLOY_DIR/app.env"
+fi
 chmod 600 "$DEPLOY_DIR/app.env"
 ok "Config written to $DEPLOY_DIR/app.env"
 
-status "Step 7/8 — systemd + Caddy"
+status "Step 8/9 — systemd + Caddy"
 cat > /etc/systemd/system/ai-panel.service <<EOF
 [Unit]
 Description=AI for You
@@ -131,8 +156,13 @@ systemctl enable --now caddy
 systemctl reload caddy || systemctl restart caddy
 ok "Service + reverse proxy configured"
 
-status "Step 8/8 — Pulling models (${MODELS})"
+status "Step 9/9 — Pulling models (${MODELS})"
 for model in $MODELS; do
+  if [ "$model" = "phi4" ]; then
+    echo -e "${RED}Note:${RESET} phi4 is a 14B model and needs ~8 GB RAM to run — more than half this VPS's memory."
+    echo "      Set OLLAMA_MAX_LOADED_MODELS=1 in ${DEPLOY_DIR}/app.env (or systemd env) and load phi4 by itself,"
+    echo "      not alongside another model, to avoid running out of memory."
+  fi
   ollama pull "$model" || echo "  (skipped $model — failed to pull)"
 done
 ok "Models ready"
@@ -154,4 +184,14 @@ echo "  Admin pass:   ${ADMIN_PASSWORD}"
 echo "  Logs:         journalctl -u ai-panel -f"
 echo "  Restart:      systemctl restart ai-panel"
 echo "  Caddy logs:   journalctl -u caddy -f"
+if [ -n "$CHROMIUM_BIN" ]; then
+  echo "  Browser agent: Chromium ready ($CHROMIUM_BIN) — enable it in Settings"
+else
+  echo -e "  Browser agent: ${RED}unavailable${RESET} — install Chromium manually and set CHROMIUM_PATH in ${DEPLOY_DIR}/app.env, then: systemctl restart ai-panel"
+fi
 echo -e "${GREEN}================================================${RESET}"
+if echo "$MODELS" | grep -qw "phi4"; then
+  echo ""
+  echo -e "${RED}Reminder:${RESET} phi4 needs ~8 GB RAM. Load it alone (set OLLAMA_MAX_LOADED_MODELS=1)"
+  echo "          — don't run it loaded at the same time as another model."
+fi
