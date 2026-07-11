@@ -187,7 +187,7 @@ cat > /etc/caddy/Caddyfile <<EOF
 
 ${DOMAIN} {
   reverse_proxy localhost:8080
-  encode zstd br gzip
+  encode gzip
 }
 EOF
 systemctl enable --now caddy
