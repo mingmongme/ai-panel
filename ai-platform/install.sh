@@ -8,6 +8,11 @@
 #   export ADMIN_PASSWORD=choose-a-strong-password
 #   curl -fsSL https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/install.sh -o /tmp/install.sh
 #   bash /tmp/install.sh
+#
+# Adding a new env var? Update `ai-platform/.env.example` in the same change
+# (the app.env heredoc below AND any new process.env[...] read in
+# artifacts/api-server/src must be documented there). Verify with:
+#   bash ai-platform/scripts/check-env-example.sh
 set -euo pipefail
 
 DOMAIN="${DOMAIN:?Set DOMAIN, e.g. export DOMAIN=ai.abcomputers.info}"
@@ -16,12 +21,40 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD, e.g. export ADMIN_PASSWORD
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
 NODE_VERSION="24.11.0"
 TARBALL_URL="https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/ai-for-you-v1.tar.gz"
+REQUIRED_KEYS_URL="https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/required-env-keys.txt"
 MODELS="${MODELS:-llama3.2 llama3.1 qwen2.5:7b mistral:7b deepseek-r1:7b phi4}"
 
 RED='\033[31m'; GREEN='\033[32m'; BLUE='\033[34m'; BOLD='\033[1m'; RESET='\033[0m'
 status() { printf "${BLUE}==>${RESET} ${BOLD}%s${RESET}\n" "$1"; }
 ok()     { printf "${GREEN}\u2714${RESET} %s\n" "$1"; }
 die()    { printf "${RED}Error:${RESET} %s\n" "$1" >&2; exit 1; }
+
+# Fails loudly if any key listed in required-env-keys.txt is missing or blank
+# in the given env file. Prevents starting/restarting the service with a
+# half-configured app.env (e.g. a required key appended blank by a future
+# sync step).
+validate_required_env() {
+  local env_file="$1"
+  local keys_file="$2"
+  [ -s "$keys_file" ] || die "Could not load the required-config checklist ($keys_file is missing or empty) — refusing to start with unverified config. Check your network/GitHub access and re-run."
+  local missing=()
+  while IFS= read -r key || [ -n "$key" ]; do
+    key="$(echo "$key" | sed 's/#.*//' | xargs)"
+    [ -z "$key" ] && continue
+    local value
+    value="$(grep -E "^${key}=" "$env_file" | tail -n1 | cut -d'=' -f2- | xargs)" || true
+    if [ -z "$value" ]; then
+      missing+=("$key")
+    fi
+  done < "$keys_file"
+  if [ "${#missing[@]}" -gt 0 ]; then
+    echo "" >&2
+    printf "${RED}Error:${RESET} the following required config values are missing or blank in %s:\n" "$env_file" >&2
+    for k in "${missing[@]}"; do printf "  - %s\n" "$k" >&2; done
+    echo "Set a real value for each key above, then re-run this script (or restart the service)." >&2
+    exit 1
+  fi
+}
 
 [ "$(id -u)" -eq 0 ] || die "Run as root (sudo bash install.sh)"
 
@@ -119,6 +152,10 @@ fi
 chmod 600 "$DEPLOY_DIR/app.env"
 ok "Config written to $DEPLOY_DIR/app.env"
 
+curl -fsSL "$REQUIRED_KEYS_URL" -o "$DEPLOY_DIR/required-env-keys.txt" || die "Could not download required-env-keys.txt from GitHub — cannot verify config, aborting before starting the service."
+validate_required_env "$DEPLOY_DIR/app.env" "$DEPLOY_DIR/required-env-keys.txt"
+ok "Required config values present"
+
 status "Step 8/9 — systemd + Caddy"
 cat > /etc/systemd/system/ai-panel.service <<EOF
 [Unit]
@@ -130,6 +167,7 @@ Type=simple
 User=root
 WorkingDirectory=${DEPLOY_DIR}/app
 EnvironmentFile=${DEPLOY_DIR}/app.env
+Environment=UV_THREADPOOL_SIZE=16
 ExecStart=/usr/local/bin/node server/index.mjs
 Restart=always
 RestartSec=5
@@ -149,7 +187,7 @@ cat > /etc/caddy/Caddyfile <<EOF
 
 ${DOMAIN} {
   reverse_proxy localhost:8080
-  encode gzip
+  encode zstd br gzip
 }
 EOF
 systemctl enable --now caddy
