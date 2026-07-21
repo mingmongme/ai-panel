@@ -5,9 +5,9 @@
 # Usage:
 #   export DOMAIN=ai.abcomputers.info
 #   export EMAIL=you@example.com
-#   export ADMIN_PASSWORD=choose-a-strong-password
-#   curl -fsSL https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/install.sh -o /tmp/install.sh
-#   bash /tmp/install.sh
+#   curl -fsSL https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/install.sh | bash
+#
+# ADMIN_PASSWORD is optional — a strong random password is generated if not set.
 #
 # Adding a new env var? Update `ai-platform/.env.example` in the same change
 # (the app.env heredoc below AND any new process.env[...] read in
@@ -17,7 +17,8 @@ set -euo pipefail
 
 DOMAIN="${DOMAIN:?Set DOMAIN, e.g. export DOMAIN=ai.abcomputers.info}"
 EMAIL="${EMAIL:?Set EMAIL for the SSL certificate, e.g. export EMAIL=you@example.com}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD, e.g. export ADMIN_PASSWORD=your-password}"
+# Generate a strong random password if none supplied
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
 NODE_VERSION="24.11.0"
 TARBALL_URL="https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/ai-for-you-v1.tar.gz"
