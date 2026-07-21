@@ -1,0 +1,20 @@
+# Keys that MUST have a non-blank value in app.env before the service starts.
+# Add a key here the same day it becomes required (not merely optional) in
+# api-server. Optional keys (e.g. OPENAI_API_KEY / OPENROUTER_API_KEY for
+# cloud models) must NOT be listed here — the app must run fine without them.
+#
+# install.sh and update.sh both read this file and refuse to start/restart
+# the ai-panel service if any listed key is missing or blank in app.env.
+#
+# Where to look in api-server when deciding whether a key is truly required:
+#   artifacts/api-server/src/index.ts  — startup-time checks (throws if missing)
+#   artifacts/api-server/src/app.ts    — session/storage vars consumed at init
+# Both files carry a comment reminding developers to update this list.
+DOMAIN
+ADMIN_USERNAME
+ADMIN_PASSWORD
+SESSION_SECRET
+OLLAMA_BASE_URL
+FRONTEND_DIST
+DATA_DIR
+PORT
