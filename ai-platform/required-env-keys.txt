@@ -11,8 +11,6 @@
 #   artifacts/api-server/src/app.ts    — session/storage vars consumed at init
 # Both files carry a comment reminding developers to update this list.
 DOMAIN
-ADMIN_USERNAME
-ADMIN_PASSWORD
 SESSION_SECRET
 OLLAMA_BASE_URL
 FRONTEND_DIST
