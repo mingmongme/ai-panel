@@ -7,7 +7,8 @@
 #   export EMAIL=you@example.com
 #   curl -fsSL https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/install.sh | bash
 #
-# ADMIN_PASSWORD is optional — a strong random password is generated if not set.
+# On first visit the app shows a setup screen — create your admin account there.
+# No ADMIN_PASSWORD env var needed.
 #
 # Adding a new env var? Update `ai-platform/.env.example` in the same change
 # (the app.env heredoc below AND any new process.env[...] read in
@@ -17,8 +18,6 @@ set -euo pipefail
 
 DOMAIN="${DOMAIN:?Set DOMAIN, e.g. export DOMAIN=ai.abcomputers.info}"
 EMAIL="${EMAIL:?Set EMAIL for the SSL certificate, e.g. export EMAIL=you@example.com}"
-# Generate a strong random password if none supplied
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-platform}"
 NODE_VERSION="24.11.0"
 TARBALL_URL="https://raw.githubusercontent.com/mingmongme/ai-panel/main/ai-platform/ai-for-you-v1.tar.gz"
@@ -138,8 +137,6 @@ cat > "$DEPLOY_DIR/app.env" <<EOF
 NODE_ENV=production
 PORT=8080
 DOMAIN=${DOMAIN}
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=${ADMIN_PASSWORD}
 SESSION_SECRET=${SESSION_SECRET}
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 FRONTEND_DIST=${DEPLOY_DIR}/app/public
@@ -218,8 +215,7 @@ echo -e "${GREEN}================================================${RESET}"
 echo -e "${GREEN}  AI for You — installed${RESET}"
 echo -e "${GREEN}================================================${RESET}"
 echo "  URL:          https://${DOMAIN}"
-echo "  Admin user:   admin"
-echo "  Admin pass:   ${ADMIN_PASSWORD}"
+echo "  Admin user:   create your account on first visit (setup screen)"
 echo "  Logs:         journalctl -u ai-panel -f"
 echo "  Restart:      systemctl restart ai-panel"
 echo "  Caddy logs:   journalctl -u caddy -f"
