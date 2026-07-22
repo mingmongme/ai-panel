@@ -67,8 +67,13 @@ curl -fsSL "$EXAMPLE_KEYS_URL" -o /tmp/.env.example 2>/dev/null || true
 if [ -s /tmp/.env.example ]; then
   added=0
   while IFS= read -r line || [ -n "$line" ]; do
+    # Skip blank lines and comment-only lines before any shell word-splitting
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    # Lines without '=' are not key=value lines
+    [[ "$line" != *"="* ]] && continue
     key="${line%%=*}"
-    key="$(echo "$key" | xargs)"
+    key="${key// /}"   # strip spaces without xargs (avoids quote parsing issues)
     [ -z "$key" ] && continue
     case "$key" in \#*) continue ;; esac
     grep -q "^${key}=" "$DEPLOY_DIR/app.env" || { echo "${key}=" >> "$DEPLOY_DIR/app.env"; added=$((added + 1)); }
