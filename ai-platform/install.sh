@@ -169,6 +169,9 @@ Environment=UV_THREADPOOL_SIZE=16
 ExecStart=/usr/local/bin/node server/index.mjs
 Restart=always
 RestartSec=5
+MemoryMax=3G
+MemorySwapMax=512M
+OOMScoreAdjust=200
 StandardOutput=append:/var/log/ai-panel.log
 StandardError=append:/var/log/ai-panel.log
 
