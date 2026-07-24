@@ -166,7 +166,7 @@ User=root
 WorkingDirectory=${DEPLOY_DIR}/app
 EnvironmentFile=${DEPLOY_DIR}/app.env
 Environment=UV_THREADPOOL_SIZE=16
-ExecStart=/usr/local/bin/node server/index.mjs
+ExecStart=/usr/local/bin/node dist/index.mjs
 Restart=always
 RestartSec=5
 MemoryMax=3G
