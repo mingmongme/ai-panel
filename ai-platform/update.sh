@@ -90,6 +90,13 @@ validate_required_env "$DEPLOY_DIR/app.env" "$DEPLOY_DIR/required-env-keys.txt"
 ok "Required config values present"
 
 status "Step 5/5 — Restarting service"
+# Self-heal: if the service file still points to the old server/ path, fix it now
+SERVICE_FILE="/etc/systemd/system/ai-panel.service"
+if [ -f "$SERVICE_FILE" ] && grep -q "node server/index.mjs" "$SERVICE_FILE"; then
+  sed -i 's|node server/index.mjs|node dist/index.mjs|' "$SERVICE_FILE"
+  systemctl daemon-reload
+  ok "Fixed service ExecStart path (server/ → dist/)"
+fi
 systemctl restart ai-panel
 sleep 2
 if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
