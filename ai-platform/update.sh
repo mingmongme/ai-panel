@@ -94,9 +94,10 @@ status "Step 5/5 — Restarting service"
 SERVICE_FILE="/etc/systemd/system/ai-panel.service"
 if [ -f "$SERVICE_FILE" ] && grep -q "node server/index.mjs" "$SERVICE_FILE"; then
   sed -i 's|node server/index.mjs|node dist/index.mjs|' "$SERVICE_FILE"
-  systemctl daemon-reload
   ok "Fixed service ExecStart path (server/ → dist/)"
 fi
+# Always reload the unit to pick up any on-disk changes before restarting
+systemctl daemon-reload
 systemctl restart ai-panel
 sleep 2
 if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
